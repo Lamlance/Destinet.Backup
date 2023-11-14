@@ -44,7 +44,7 @@ namespace Destinet.Backup
     System.Timers.Timer _fullTimer;
     private static readonly HttpClient _httpClient = new HttpClient();
 
-    long _lastBackUpTime { get; set; } = DateTime.UtcNow.Millisecond;
+    long _lastBackUpTime { get; set; } = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
     long _lastTokenTime { get; set; } = -1;
     private string _access_token { get; set; } = "";
     public BackupConfig BackupConfig { get; set; }
@@ -100,20 +100,20 @@ namespace Destinet.Backup
       var modifiedFiles = _filesToCheck.Where((file) =>
       {
         var lastModified = File.GetLastWriteTimeUtc(file);
-        return lastModified.Millisecond > _lastBackUpTime + (60 * 1000);
+        return ConvertToTimestamp(lastModified) > _lastBackUpTime;
       }).ToList();
 
-      var backupFolderName = $"{DateTime.UtcNow.Millisecond.GetHashCode()} {DateTime.UtcNow.ToString("yyyy-MM-dd")}";
+      var backupFolderName = $"{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()} {DateTime.UtcNow.ToString("yyyy-MM-dd")}";
       var backupPath = Path.Combine(BackupConfig.BackupDes, backupFolderName);
 
       Directory.CreateDirectory(backupPath);
       CopyFiles(modifiedFiles.ToArray(), backupPath);
 
-      _lastBackUpTime = DateTime.UtcNow.Millisecond;
+      _lastBackUpTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
       var backupZip = $"{backupPath}.zip";
       ZipFolder(backupPath, backupZip, true);
 
-      if (_lastTokenTime < DateTime.UtcNow.Second + (5 * 60))
+      if (_lastTokenTime < DateTimeOffset.UtcNow.ToUnixTimeSeconds() - (5 * 60))
       {
         Task.Run(async () => {
           await GetAccessToken();
@@ -125,10 +125,14 @@ namespace Destinet.Backup
         UploadToGoogleDrive(backupZip, _access_token, BackupConfig.DriveFolderID);
       }
     }
-
+    private long ConvertToTimestamp(DateTime value)
+    {
+      long epoch = (value.Ticks - 621355968000000000) / TimeSpan.TicksPerMillisecond;
+      return epoch;
+    }
     public void FullBackUp(Object source, System.Timers.ElapsedEventArgs e)
     {
-      var backupFolderName = $"{DateTime.UtcNow.Millisecond.GetHashCode()} {DateTime.UtcNow.ToString("yyyy-MM-dd")} Full";
+      var backupFolderName = $"{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()} {DateTime.UtcNow.ToString("yyyy-MM-dd")} Full";
       var backupPath = Path.Combine(BackupConfig.BackupDes, backupFolderName);
 
       Directory.CreateDirectory(backupPath);
@@ -137,7 +141,7 @@ namespace Destinet.Backup
       var backupZip = $"{backupPath}.zip";
       ZipFolder(backupPath, backupZip, true);
 
-      if(_lastTokenTime < DateTime.UtcNow.Second + (5 * 60))
+      if(_lastTokenTime < DateTimeOffset.UtcNow.ToUnixTimeSeconds() - (5 * 60))
       {
         Task.Run(async () => {
           await GetAccessToken();
@@ -186,7 +190,7 @@ namespace Destinet.Backup
       var res = await BackupLib._httpClient.PostAsync("https://oauth2.googleapis.com/token", content);
       var json = await res.Content.ReadAsStringAsync();
       var token = JsonConvert.DeserializeObject<AccessToken>(json);
-      _lastBackUpTime = DateTime.UtcNow.Second + token.expires_in;
+      _lastTokenTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + token.expires_in;
       _access_token = token.access_token;
     }
     
