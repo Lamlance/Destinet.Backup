@@ -21,3 +21,17 @@ namespace <name_space>
   }
 }
 ```
+```json
+{
+  "BackUp": {
+    "FullIntervalHour": 0.08, //5mins for testing
+    "IncrementalIntervalHour": 0.08, //5mins for testing
+    "BackupDir": "./", //folder will be backup
+    "BackupDes": "./Backups", //folder will write backup to,
+    "RefreshToken": <refresh_token>,
+    "ClientId": <google oauth2 client id>,
+    "ClientSecret": <google oauth2 client secrete>,
+    "DriveFolderID": <google drive folder>
+  }
+}
+```
