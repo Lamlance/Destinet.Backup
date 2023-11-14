@@ -14,7 +14,7 @@ using System.Net.Http;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 
-namespace BackupLib
+namespace Destinet.Backup
 {
   public interface IBackup
   {
@@ -97,14 +97,13 @@ namespace BackupLib
 
     public void IncrementalBackup(Object source, System.Timers.ElapsedEventArgs e)
     {
-      Thread.Sleep(10 * 1000);
       var modifiedFiles = _filesToCheck.Where((file) =>
       {
         var lastModified = File.GetLastWriteTimeUtc(file);
         return lastModified.Millisecond > _lastBackUpTime + (60 * 1000);
       }).ToList();
 
-      var backupFolderName = $"{DateTime.UtcNow.ToString("yyyy-MM-dd")}";
+      var backupFolderName = $"{DateTime.UtcNow.Millisecond.GetHashCode()} {DateTime.UtcNow.ToString("yyyy-MM-dd")}";
       var backupPath = Path.Combine(BackupConfig.BackupDes, backupFolderName);
 
       Directory.CreateDirectory(backupPath);
@@ -129,8 +128,7 @@ namespace BackupLib
 
     public void FullBackUp(Object source, System.Timers.ElapsedEventArgs e)
     {
-      Thread.Sleep(10 * 1000);
-      var backupFolderName = $"{DateTime.UtcNow.ToString("yyyy-MM-dd")} Full";
+      var backupFolderName = $"{DateTime.UtcNow.Millisecond.GetHashCode()} {DateTime.UtcNow.ToString("yyyy-MM-dd")} Full";
       var backupPath = Path.Combine(BackupConfig.BackupDes, backupFolderName);
 
       Directory.CreateDirectory(backupPath);
